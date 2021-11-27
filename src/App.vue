@@ -1,6 +1,12 @@
 <template>
   <div id="app">
-    <MyTable :columns="columns" :items="items" rowKey="id" />
+    <MyTable
+      :columns="columns"
+      :items="items"
+      :pagination="false"
+      :infiniteScroll="false"
+      rowKey="id"
+    />
   </div>
 </template>
 

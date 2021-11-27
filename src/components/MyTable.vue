@@ -25,20 +25,27 @@
       </tbody>
     </table>
     <div v-if="pagination" class="pagination-wrapper">
-      <button @click="getPrevPaginationPage">Назад</button>
-      {{ this.paginationSettings.currentPage + 1 }}
-      <button @click="getNextPaginationPage">Вперед</button>
+      <div v-if="!infiniteScroll" class="pagination-buttons">
+        <button @click="getPrevPaginationPage">Назад</button>
+        {{ this.paginationSettings.currentPage + 1 }}
+        <button @click="getNextPaginationPage">Вперед</button>
+      </div>
+      <div v-else-if="!isLastPage" v-view="test" class="infscroll-detector">
+        <PageLoader />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import ColumnCellHead from '/src/components/TableCellHead'
+import PageLoader from '/src/assets/loader.svg'
 
 export default {
   name: 'MyTable',
   components: {
-    ColumnCellHead
+    ColumnCellHead,
+    PageLoader
   },
   props: {
     columns: {
@@ -55,7 +62,11 @@ export default {
     },
     pagination: {
       type: Boolean,
-      default: true
+      default: false
+    },
+    infiniteScroll: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -83,6 +94,9 @@ export default {
     totalPages() {
       return Math.floor(this.totalRows / this.paginationSettings.rowPerPage)
     },
+    isLastPage() {
+      return this.paginationSettings.currentPage === this.totalPages
+    },
     filteredRows() {
       let rows = JSON.parse(JSON.stringify(this.items))
       rows = rows.filter(row => this.filterRow(row))
@@ -104,8 +118,10 @@ export default {
       return rows
     },
     paginatedRows() {
-      const startRowIdx =
-        this.paginationSettings.currentPage * this.paginationSettings.rowPerPage
+      const startRowIdx = this.infiniteScroll
+        ? 0
+        : this.paginationSettings.currentPage *
+          this.paginationSettings.rowPerPage
       const endRowIdx =
         (this.paginationSettings.currentPage + 1) *
         this.paginationSettings.rowPerPage
@@ -116,6 +132,12 @@ export default {
     }
   },
   methods: {
+    test(e) {
+      if (e.type === 'enter') {
+        console.log('VIEW')
+        this.getNextPaginationPage()
+      }
+    },
     filterRow(row) {
       let result = true
       Object.keys(this.columnsFilters).forEach(key => {
@@ -155,7 +177,6 @@ export default {
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
 table {
   border-spacing: 0;
@@ -164,7 +185,6 @@ table {
 
 td {
   border-bottom: 1px solid rgb(226, 226, 226);
-  // min-width: 100px;
   background: rgb(247, 245, 237);
   text-align: left;
 
