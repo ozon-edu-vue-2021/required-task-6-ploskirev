@@ -13,7 +13,7 @@
       v-if="isNormalTableSet"
       :columns="columns"
       :items="items"
-      :pagination="false"
+      :pagination="true"
       :infiniteScroll="false"
       rowKey="id"
     >

@@ -51,7 +51,26 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page-number {
-  margin: 0 8px;
+.pagination-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  margin: 8px 0;
+
+  button {
+    border: none;
+    width: 100px;
+    height: 20px;
+    border-radius: 3px;
+    background: rgb(103, 135, 196);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .page-number {
+    min-width: 50px;
+    margin: 0 8px;
+  }
 }
 </style>
