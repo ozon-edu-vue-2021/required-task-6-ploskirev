@@ -1,12 +1,13 @@
 <template>
   <div id="app">
     <div class="buttons-wrapper">
-      <button :style="getButtonStyle('normal')" @click="setTable('normal')">
-        TABLE
-      </button>
-      <button :style="getButtonStyle('virtual')" @click="setTable('virtual')">
-        VIRTUAL TABLE
-      </button>
+      <TableToggler
+        v-for="typeTable in CNSTS"
+        :key="typeTable"
+        :val="typeTable"
+        :isActive="isActiveButton()"
+        @click="setTable(typeTable)"
+      />
     </div>
     <MyTable
       v-if="isNormalTableSet"
@@ -15,8 +16,12 @@
       :pagination="false"
       :infiniteScroll="false"
       rowKey="id"
-    />
-    <MyVirtualTable
+    >
+      <template #body-cell-email="{ item }">
+        <a :href="`mailto:${item}`" target="_blank">{{ item }}</a>
+      </template>
+    </MyTable>
+    <MyTableVirtual
       v-else-if="isVirtualTableSet"
       :columns="columns"
       :items="items"
@@ -26,21 +31,26 @@
 
 <script>
 import { columns } from '/src/assets/columns'
-import { items } from '/src/assets/items'
-import MyVirtualTable from './components/MyVirtualTable.vue'
+import TableToggler from '/src/components/TableToggler'
+import MyTableVirtual from './components/MyTableVirtual.vue'
 import MyTable from './components/MyTable.vue'
 
 export default {
   name: 'App',
   components: {
-    MyVirtualTable,
-    MyTable
+    MyTableVirtual,
+    MyTable,
+    TableToggler
   },
   data() {
     return {
       columns,
-      items,
-      tableType: ''
+      items: [],
+      tableType: '',
+      CNSTS: {
+        NORMAL: 'normal',
+        VIRTUAL: 'virtual'
+      }
     }
   },
   async created() {
@@ -55,21 +65,18 @@ export default {
   },
   computed: {
     isNormalTableSet() {
-      return this.tableType === 'normal'
+      return this.tableType === this.CNSTS.NORMAL
     },
     isVirtualTableSet() {
-      return this.tableType === 'virtual'
+      return this.tableType === this.CNSTS.VIRTUAL
     }
   },
   methods: {
     setTable(type) {
       this.tableType = type
     },
-    getButtonStyle(type) {
-      return {
-        background:
-          type === this.tableType ? 'rgb(221, 173, 42)' : 'rgb(50, 104, 219)'
-      }
+    isActiveButton(type) {
+      return type === this.tableType
     }
   }
 }
@@ -78,18 +85,6 @@ export default {
 <style lang="scss" scoped>
 .buttons-wrapper {
   margin: 20px 0;
-
-  button {
-    width: 150px;
-    height: 30px;
-    border: none;
-    border-radius: 5px;
-    background: rgb(50, 104, 219);
-    color: #fff;
-    font-weight: 500;
-    margin: 0 20px;
-    cursor: pointer;
-  }
 }
 </style>
 
@@ -104,5 +99,11 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+}
+
+.button-flat {
+  background: #fff;
+  border: none;
+  cursor: pointer;
 }
 </style>

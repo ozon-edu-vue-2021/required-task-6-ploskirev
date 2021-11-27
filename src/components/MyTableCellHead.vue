@@ -22,20 +22,19 @@
         @click="openFilter"
       />
     </div>
-
-    <div v-show="isFilterOpen" class="dropdown">
-      <button class="button-flat button-close" @click="closeFilter">
-        &times;
-      </button>
-      <input class="filter-input" type="text" v-model="filterInput" />
-      <button class="button-flat botton-submit" @click="submitFilter">
-        ok
-      </button>
+    <div v-if="isFilterOpen" class="filter-dropdown">
+      <FilterDropdown
+        :filterText="filterText"
+        @closeFilter="closeFilter"
+        @submitFilter="submitFilter"
+        @textUpdate="updateFilterText"
+      />
     </div>
   </th>
 </template>
 
 <script>
+import FilterDropdown from '/src/components/MyTableFilterDropdown'
 import FilterIcon from '/src/assets/filter.svg'
 import SortReverseIcon from '/src/assets/sortAsc.svg'
 import SortIcon from '/src/assets/sortDesc.svg'
@@ -47,7 +46,8 @@ export default {
     FilterIcon,
     SortIcon,
     SortReverseIcon,
-    NoSortIcon
+    NoSortIcon,
+    FilterDropdown
   },
   props: {
     column: {
@@ -67,7 +67,7 @@ export default {
   data() {
     return {
       isFilterOpen: false,
-      filterInput: ''
+      filterText: ''
     }
   },
   computed: {
@@ -88,8 +88,11 @@ export default {
     closeFilter() {
       this.isFilterOpen = false
     },
+    updateFilterText(val) {
+      this.filterText = val
+    },
     submitFilter() {
-      this.$emit('filterUpdated', this.filterInput)
+      this.$emit('filterUpdated', this.filterText)
       this.closeFilter()
     }
   }
@@ -126,21 +129,11 @@ export default {
     }
   }
 
-  .dropdown {
+  .filter-dropdown {
     position: absolute;
     z-index: 1;
     top: 100%;
     left: 0;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: center;
-    width: 200px;
-    padding: 4px;
-    padding-top: 28px;
-    background: #fff;
-    border-radius: 3px;
-    box-shadow: 0 0 5px 2px rgb(168, 178, 197);
 
     .button-close {
       position: absolute;
@@ -152,12 +145,6 @@ export default {
     .filter-input {
       width: 80%;
     }
-  }
-
-  .button-flat {
-    background: #fff;
-    border: none;
-    cursor: pointer;
   }
 }
 </style>

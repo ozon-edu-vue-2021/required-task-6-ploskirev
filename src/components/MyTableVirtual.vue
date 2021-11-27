@@ -93,6 +93,7 @@ export default {
       overflow: hidden;
       background: rgb(247, 245, 237);
       font-size: 12px;
+      height: 56px;
 
       .td {
         text-align: left;

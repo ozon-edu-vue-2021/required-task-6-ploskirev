@@ -16,36 +16,44 @@
       </thead>
       <tbody>
         <tr v-for="row in preparedRows" :key="row[rowKey]">
-          <td v-for="column in columns" :key="column.key">
-            <div class="content">
-              {{ row[column.key] }}
-            </div>
-          </td>
+          <ColumnCellBody
+            v-for="column in columns"
+            :key="column.key"
+            :item="row[column.key]"
+          >
+            <template #body-cell="{ item }">
+              <slot :name="`body-cell-${column.key}`" :item="item"></slot>
+            </template>
+          </ColumnCellBody>
         </tr>
       </tbody>
     </table>
-    <div v-if="pagination" class="pagination-wrapper">
-      <div v-if="!infiniteScroll" class="pagination-buttons">
-        <button @click="getPrevPaginationPage">Назад</button>
-        {{ this.paginationSettings.currentPage + 1 }}
-        <button @click="getNextPaginationPage">Вперед</button>
-      </div>
-      <div v-else-if="!isLastPage" v-view="test" class="infscroll-detector">
-        <PageLoader />
-      </div>
-    </div>
+    <PaginationBlock
+      v-if="pagination"
+      :infiniteScroll="infiniteScroll"
+      :currentPage="paginationSettings.currentPage + 1"
+      :isLastPage="isLastPage"
+      @paginationPrevPageClick="getPrevPaginationPage"
+      @paginationNextPageClick="getNextPaginationPage"
+      @loaderEnter="onLoaderEnter"
+    />
   </div>
 </template>
 
 <script>
-import ColumnCellHead from '/src/components/TableCellHead'
-import PageLoader from '/src/assets/loader.svg'
+import ColumnCellHead from '/src/components/MyTableCellHead'
+import ColumnCellBody from '/src/components/MyTableCellBody'
+import PaginationBlock from '/src/components/MyTablePaginationBlock'
+
+const DESC = 'desc'
+const ASC = 'asc'
 
 export default {
   name: 'MyTable',
   components: {
     ColumnCellHead,
-    PageLoader
+    ColumnCellBody,
+    PaginationBlock
   },
   props: {
     columns: {
@@ -89,7 +97,7 @@ export default {
   },
   computed: {
     totalRows() {
-      return this.sortedRows.length
+      return this.sortedRows.length - 1
     },
     totalPages() {
       return Math.floor(this.totalRows / this.paginationSettings.rowPerPage)
@@ -99,7 +107,7 @@ export default {
     },
     filteredRows() {
       let rows = JSON.parse(JSON.stringify(this.items))
-      rows = rows.filter(row => this.filterRow(row))
+      rows = rows.filter(this.filterRow)
       return rows
     },
     sortedRows() {
@@ -107,9 +115,9 @@ export default {
       if (this.sortingCol) {
         rows.sort((a, b) => {
           if (a[this.sortingCol] < b[this.sortingCol]) {
-            return this.sortingOrder === 'desc' ? -1 : 1
+            return this.sortingOrder === DESC ? -1 : 1
           } else if (a[this.sortingCol] > b[this.sortingCol]) {
-            return this.sortingOrder === 'desc' ? 1 : -1
+            return this.sortingOrder === DESC ? 1 : -1
           } else {
             return 0
           }
@@ -132,30 +140,29 @@ export default {
     }
   },
   methods: {
-    test(e) {
+    onLoaderEnter(e) {
       if (e.type === 'enter') {
-        console.log('VIEW')
         this.getNextPaginationPage()
       }
     },
     filterRow(row) {
-      let result = true
-      Object.keys(this.columnsFilters).forEach(key => {
+      return Object.keys(this.columnsFilters).every(key => {
         if (this.columnsFilters[key] !== '') {
           const filterValue = `${this.columnsFilters[key]}`.toLowerCase()
           const checkingValue = `${row[key]}`.toLowerCase()
-          checkingValue.indexOf(filterValue) < 0 && (result = false)
+          return checkingValue.indexOf(filterValue) > -1
+        } else {
+          return true
         }
       })
-      return result
     },
     sortRows(colKey) {
       if (this.sortingCol !== colKey) {
         this.sortingCol = colKey
-        this.sortingOrder = 'desc'
+        this.sortingOrder = DESC
       } else {
-        this.sortingCol = this.sortingOrder == 'desc' ? colKey : null
-        this.sortingOrder = this.sortingOrder == 'desc' ? 'asc' : null
+        this.sortingCol = this.sortingOrder == DESC ? colKey : null
+        this.sortingOrder = this.sortingOrder == DESC ? ASC : null
       }
       this.paginationSettings.currentPage = 0
     },
@@ -181,26 +188,6 @@ export default {
 table {
   border-spacing: 0;
   width: 100%;
-}
-
-td {
-  border-bottom: 1px solid rgb(226, 226, 226);
-  background: rgb(247, 245, 237);
-  text-align: left;
-
-  .content {
-    height: 70px;
-    -ms-text-overflow: ellipsis;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    -ms-line-clamp: 3;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    display: -webkit-box;
-    word-wrap: break-word;
-    -webkit-box-orient: vertical;
-    box-orient: vertical;
-  }
 }
 
 .dropdown {
