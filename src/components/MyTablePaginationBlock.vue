@@ -22,7 +22,7 @@ export default {
     }
   },
   render(h, { props, listeners }) {
-    const { infiniteScroll, currentPage, isLastPage } = props
+    const { infiniteScroll, currentPage } = props
     const { paginationPrevPageClick, paginationNextPageClick, loaderEnter } =
       listeners
     const renderPagination = () => (
@@ -37,15 +37,7 @@ export default {
         <PageLoader />
       </div>
     )
-    return (
-      <div>
-        {!infiniteScroll
-          ? renderPagination()
-          : !isLastPage
-          ? renderInfScroll()
-          : null}
-      </div>
-    )
+    return <div>{!infiniteScroll ? renderPagination() : renderInfScroll()}</div>
   }
 }
 </script>

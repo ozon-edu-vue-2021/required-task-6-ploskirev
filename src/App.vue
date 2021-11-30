@@ -13,8 +13,10 @@
       v-if="isNormalTableSet"
       :columns="columns"
       :items="items"
-      :pagination="true"
-      :infiniteScroll="false"
+      :pagination="pagination"
+      :serverPagination="serverPagination"
+      :infiniteScroll="infiniteScroll"
+      :requestFunc="getNextPageData"
       rowKey="id"
     >
       <template #body-cell-email="{ item }">
@@ -46,6 +48,9 @@ export default {
     return {
       columns,
       items: [],
+      pagination: false,
+      serverPagination: false,
+      infiniteScroll: false,
       tableType: '',
       CNSTS: {
         NORMAL: 'normal',
@@ -54,13 +59,8 @@ export default {
     }
   },
   async created() {
-    try {
-      const response = await fetch(
-        'https://jsonplaceholder.typicode.com/comments'
-      )
-      this.items = await response.json()
-    } catch (err) {
-      console.warn(err)
+    if (!this.infiniteScroll && !this.serverPagination) {
+      this.items = await this.getAllData() // грузим все данные, если не infscroll
     }
   },
   computed: {
@@ -72,6 +72,34 @@ export default {
     }
   },
   methods: {
+    async getNextPageData(pageNumber) {
+      const newData = await this.getPageData(pageNumber)
+      if (this.infiniteScroll) {
+        this.items = [...this.items, ...newData]
+      } else {
+        this.items = newData
+      }
+    },
+    async getAllData() {
+      try {
+        const response = await fetch(
+          'https://jsonplaceholder.typicode.com/comments'
+        )
+        return await response.json()
+      } catch (err) {
+        console.warn(err)
+      }
+    },
+    async getPageData(pageNumber) {
+      try {
+        const response = await fetch(
+          `https://jsonplaceholder.typicode.com/comments?postId=${pageNumber}`
+        )
+        return await response.json()
+      } catch (err) {
+        console.warn(err)
+      }
+    },
     setTable(type) {
       this.tableType = type
     },

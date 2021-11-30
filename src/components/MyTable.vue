@@ -31,7 +31,7 @@
     <PaginationBlock
       v-if="pagination"
       :infiniteScroll="infiniteScroll"
-      :currentPage="paginationSettings.currentPage + 1"
+      :currentPage="paginationSettings.currentPage"
       :isLastPage="isLastPage"
       @paginationPrevPageClick="getPrevPaginationPage"
       @paginationNextPageClick="getNextPaginationPage"
@@ -72,9 +72,16 @@ export default {
       type: Boolean,
       default: false
     },
+    serverPagination: {
+      type: Boolean,
+      default: false
+    },
     infiniteScroll: {
       type: Boolean,
       default: false
+    },
+    requestFunc: {
+      type: Function
     }
   },
   data() {
@@ -83,12 +90,15 @@ export default {
       sortingOrder: null,
       columnsFilters: {},
       paginationSettings: {
-        rowPerPage: 10,
+        rowPerPage: 5,
         currentPage: 0
       }
     }
   },
   created() {
+    if ((this.pagination || this.serverPagination) && !this.infiniteScroll) {
+      this.getNextPaginationPage()
+    }
     this.columns.forEach(column => {
       if (column.filtering) {
         this.$set(this.columnsFilters, column.key, '')
@@ -97,10 +107,12 @@ export default {
   },
   computed: {
     totalRows() {
-      return this.sortedRows.length - 1
+      return this.sortedRows.length
     },
     totalPages() {
-      return Math.floor(this.totalRows / this.paginationSettings.rowPerPage)
+      return this.serverPagination
+        ? +Infinity
+        : Math.floor(this.totalRows / this.paginationSettings.rowPerPage)
     },
     isLastPage() {
       return this.paginationSettings.currentPage === this.totalPages
@@ -128,22 +140,36 @@ export default {
     paginatedRows() {
       const startRowIdx = this.infiniteScroll
         ? 0
-        : this.paginationSettings.currentPage *
+        : (this.paginationSettings.currentPage - 1) *
           this.paginationSettings.rowPerPage
       const endRowIdx =
-        (this.paginationSettings.currentPage + 1) *
-        this.paginationSettings.rowPerPage
-      return this.sortedRows.slice(startRowIdx, endRowIdx)
+        this.paginationSettings.currentPage * this.paginationSettings.rowPerPage
+      return this.serverPagination
+        ? this.sortedRows
+        : this.sortedRows.slice(startRowIdx, endRowIdx)
     },
     preparedRows() {
       return this.pagination ? this.paginatedRows : this.sortedRows
     }
   },
   methods: {
-    onLoaderEnter(e) {
+    async onLoaderEnter(e) {
       if (e.type === 'enter') {
-        this.getNextPaginationPage()
+        this.makeRequest()
       }
+    },
+    async makeRequest() {
+      this.infiniteScroll && this.paginationSettings.currentPage++
+      await this.requestFunc(this.paginationSettings.currentPage)
+      if (this.infiniteScroll) {
+        this.isLoaderInViewport() && this.makeRequest()
+      }
+    },
+    isLoaderInViewport() {
+      const loader = document.querySelector('.infscroll-detector')
+      const { top: loaderTop } = loader.getBoundingClientRect()
+      const viewportHeight = document.documentElement.clientHeight
+      return loaderTop < viewportHeight
     },
     filterRow(row) {
       return Object.keys(this.columnsFilters).every(key => {
@@ -170,15 +196,20 @@ export default {
       this.columnsFilters[colKey] = filterValue
       this.paginationSettings.currentPage = 0
     },
-    getNextPaginationPage() {
-      this.paginationSettings.currentPage < this.totalPages
-        ? this.paginationSettings.currentPage++
-        : null
+    async getNextPaginationPage() {
+      if (this.paginationSettings.currentPage < this.totalPages) {
+        this.paginationSettings.currentPage++
+      }
+      if (this.serverPagination) {
+        await this.makeRequest()
+      }
     },
-    getPrevPaginationPage() {
-      this.paginationSettings.currentPage > 0
-        ? this.paginationSettings.currentPage--
-        : null
+    async getPrevPaginationPage() {
+      if (this.paginationSettings.currentPage === 1) return
+      this.paginationSettings.currentPage--
+      if (this.serverPagination) {
+        await this.makeRequest()
+      }
     }
   }
 }
